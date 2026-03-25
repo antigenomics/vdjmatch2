@@ -125,5 +125,7 @@ CliConfig ParseCli(int argc, char** argv) {
         throw std::runtime_error("Edit limits must be non-negative");
     }
 
+    config.maxEdits = config.maxSub + config.maxIns + config.maxDel;
+
     return config;
 }
