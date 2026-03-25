@@ -82,14 +82,51 @@ Example:
   --align
 ```
 
-## Output
+## Input and output format
 
-The output is a TSV file with one row per match.
+`vdjmatch2` takes **two input TSV files**: a **query repertoire** and a **target repertoire**.  
+Each row is a single clonotype. The tool iterates over clonotypes from the first file and searches for matches in the second one.
 
-Each row contains:
-- fields from the query repertoire entry
-- fields from the matched target repertoire entry
-- search metrics such as edit distance or matrix score
-- optional alignment strings if `--align` is enabled
+Both files must be **tab-separated** and contain a **header row**.
 
-Because the tool reports all matches within the search radius, one target clonotype may appear in multiple rows.
+### Input columns
+
+Only the CDR3 amino-acid sequence column is required. By default, `vdjmatch2` tries to detect it as:
+
+- `junction_aa`
+- `cdr3`
+
+You can also set it explicitly with `--junction-col`.
+
+Other columns are optional and are used only when needed:
+
+- V gene: `--v-col` (*v_call* or *v.segm*)
+- J gene: `--j-col` (*j_call* or *j.segm*)
+- epitope: `--epitope-col` (*antigen.epitope*)
+- species: `--species-col` (*species*)
+- chain: `--chain-col` (*gene*)
+
+If a filter is requested, the corresponding column must be present:
+
+- `--match-v` → V column
+- `--match-j` → J column
+- `--epitope` → epitope column
+- `--species` → species column
+- `--gene` → chain column
+
+Dataset-level filters (`--gene`, `--species`, `--epitope`) are applied **before** trie construction and **before** matching.
+
+### Output file
+
+The output is a TSV where **each row is one query–target match**.  
+If several target clonotypes fall into the allowed radius for one query clonotype, all of them are written as separate rows. The same target clonotype may therefore appear multiple times.
+
+The output contains fields from both the query and target clonotypes, plus match metadata.
+
+Depending on the mode, it also includes:
+
+- **edit mode**: distance, substitutions, insertions, deletions
+- **matrix mode**: match cost
+- **optional alignment mode**: query alignment, target alignment
+
+So the output is **not** a deduplicated repertoire intersection, but a full list of all matched query–target pairs.
