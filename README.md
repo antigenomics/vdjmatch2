@@ -13,8 +13,8 @@ The result file contains information about both the query clonotype and the matc
 
 | Flag             |        Type | Default                 | Description                                                                                                |
 |------------------|------------:|-------------------------|------------------------------------------------------------------------------------------------------------|
-| `input_tsv`      | positional  | —                       | First input clonotype table (query repertoire, TSV).                                                       |
-| `input_tsv`      |  positional | —                       | Second input clonotype table (target repertoire, TSV).                                                     |
+| `query_tsv`      |  positional | —                       | First input clonotype table (query repertoire, TSV).                                                       |
+| `target_tsv`     |  positional | —                       | Second input clonotype table (target repertoire, TSV).                                                     |
 | `--out`          |       `str` | `match_result.tsv`      | Output TSV path.                                                                                           |
 | `--max-sub`      |       `int` | `1`                     | Maximum substitutions allowed.                                                                             |
 | `--max-ins`      |       `int` | `0`                     | Maximum insertions allowed.                                                                                |
@@ -91,7 +91,7 @@ Example:
 ### Build Instructions
 ```sh
 git clone https://github.com/antigenomics/vdjmatch2.git
-cd TCRtrie
+cd vdjmatch2
 mkdir build && cd build
 cmake ..
 make
