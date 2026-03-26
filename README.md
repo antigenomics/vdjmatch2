@@ -84,18 +84,42 @@ Example:
 
 ## Installation
 
-### Requirements
-- **C++ Compiler:** C++17+
-- **CMake:** Build system
+#### Requirements
+- Python 3.8+
+- CMake
+- C++17-compatible compiler
 
-### Build Instructions
-```sh
+### 1. Install from PyPI
+
+```bash
+pip install vdjmatch2
+```
+
+### 2. Install directly from GitHub
+
+
+```bash
+pip install "git+https://github.com/antigenomics/vdjmatch2.git"
+```
+
+### 3. Clone the repository and install locally
+
+```bash
 git clone https://github.com/antigenomics/vdjmatch2.git
 cd vdjmatch2
-mkdir build && cd build
-cmake ..
-make
+pip install .
 ```
+
+After installation, the CLI should be available as:
+
+```bash
+vdjmatch2 --help
+```
+
+If installation fails, check that:
+- `cmake` is available in your shell
+- a working C++ compiler is installed
+- Python and `pip` are available in the environment where you run the installation
 
 
 ## Input and output format

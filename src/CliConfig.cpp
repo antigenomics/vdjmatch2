@@ -50,9 +50,14 @@ void PrintUsage() {
 }
 
 CliConfig ParseCli(int argc, char** argv) {
-    if (argc < 3) {
+    if (argc < 3 && argv[1] != std::string("--help") && argv[1] != std::string("-h")) {
         PrintUsage();
         throw std::runtime_error("Two positional TSV inputs are required");
+    }
+
+    if (argc > 1 && (argv[1] == std::string("--help") || argv[1] == std::string("-h"))) {
+        PrintUsage();
+        std::exit(0);
     }
 
     CliConfig config;
