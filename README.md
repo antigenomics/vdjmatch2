@@ -82,6 +82,17 @@ vdjmatch2 query.tsv target.tsv \
   --align
 ```
 
+### Search against VDJdb
+If you want to search against VDJdb, you can use it directly:
+- Download a release from: https://github.com/antigenomics/vdjdb-db/releases
+- Unpack the archive
+- Use vdjdb.txt as your target file (no need to modify columns)
+
+Example of a 1-sub search against VDJdb:
+```bash
+vdjmatch2 query.tsv vdjdb.txt 
+```
+
 ## Installation
 
 #### Requirements
