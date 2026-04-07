@@ -53,7 +53,7 @@ The search is controlled by:
 Example:
 
 ```bash
-./build/vdjmatch2 query.tsv target.tsv \
+vdjmatch2 query.tsv target.tsv \
   --out match_result.tsv \
   --max-sub 1 \
   --max-ins 0 \

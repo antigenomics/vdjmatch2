@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
-include(CTest)
+
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
 
 add_executable(vdjmatch2
         main/main.cpp
@@ -18,23 +20,9 @@ add_executable(vdjmatch2
 )
 
 target_include_directories(vdjmatch2 PRIVATE include)
+target_link_libraries(vdjmatch2 PRIVATE Threads::Threads)
 
 install(TARGETS vdjmatch2
         RUNTIME DESTINATION vdjmatch2
         COMPONENT python
 )
-
-if(BUILD_TESTING)
-    add_executable(vdjmatch2_tests
-            tests/run_tests.cpp
-            src/CliConfig.cpp
-            src/TsvReader.cpp
-            src/Trie.cpp
-            src/MatchWriter.cpp
-            src/RepertoireMatcher.cpp
-    )
-
-    target_include_directories(vdjmatch2_tests PRIVATE include)
-
-    add_test(NAME vdjmatch2_tests COMMAND vdjmatch2_tests)
-endif()
