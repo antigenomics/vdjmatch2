@@ -75,7 +75,7 @@ The search is controlled by:
 Example:
 
 ```bash
-./build/vdjmatch2 query.tsv target.tsv \
+vdjmatch2 query.tsv target.tsv \
   --matrix-path blosum62.txt \
   --max-cost 6 \
   --threads 4 \
