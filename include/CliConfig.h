@@ -11,7 +11,7 @@ struct CliConfig {
     int maxSub = 1;
     int maxIns = 0;
     int maxDel = 0;
-    int maxEdits = 1;
+    int maxEdits = -1;
 
     std::optional<std::string> matrixPath = std::nullopt;
     float maxCost = 6.0f;
@@ -20,8 +20,8 @@ struct CliConfig {
     bool matchJ = false;
     bool writeAlignment = false;
 
-    std::string gene = "";
-    std::string species = "HomoSapiens";
+    std::optional<std::string> gene = std::nullopt;
+    std::optional<std::string> species = std::nullopt;
     std::optional<std::string> epitope = std::nullopt;
 
     int threads = 4;

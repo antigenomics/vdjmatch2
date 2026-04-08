@@ -6,58 +6,72 @@
 #include <string>
 
 namespace {
-int ParseInt(const std::string& value, const std::string& flag) {
-    try {
-        return std::stoi(value);
-    } catch (...) {
-        throw std::runtime_error("Invalid integer for " + flag + ": " + value);
+    int ParseInt(const std::string& value, const std::string& flag) {
+        try {
+            std::size_t pos = 0;
+            int parsed = std::stoi(value, &pos);
+            if (pos != value.size()) {
+                throw std::runtime_error("");
+            }
+            return parsed;
+        } catch (...) {
+            throw std::runtime_error("Invalid integer for " + flag + ": " + value);
+        }
     }
-}
 
-float ParseFloat(const std::string& value, const std::string& flag) {
-    try {
-        return std::stof(value);
-    } catch (...) {
-        throw std::runtime_error("Invalid float for " + flag + ": " + value);
+    float ParseFloat(const std::string& value, const std::string& flag) {
+        try {
+            std::size_t pos = 0;
+            float parsed = std::stof(value, &pos);
+            if (pos != value.size()) {
+                throw std::runtime_error("");
+            }
+            return parsed;
+        } catch (...) {
+            throw std::runtime_error("Invalid float for " + flag + ": " + value);
+        }
     }
-}
 }
 
 void PrintUsage() {
     std::cerr
-        << "Usage: vdjmatch2 <query.tsv> <target.tsv> [options]\n"
-        << "Options:\n"
-        << "  --out <path>\n"
-        << "  --max-sub <int>\n"
-        << "  --max-ins <int>\n"
-        << "  --max-del <int>\n"
-        << "  --max-edits <int>\n"
-        << "  --matrix-path <path>\n"
-        << "  --max-cost <float>\n"
-        << "  --match-v\n"
-        << "  --match-j\n"
-        << "  --align\n"
-        << "  --gene <value>\n"
-        << "  --species <value>\n"
-        << "  --epitope <value>\n"
-        << "  --threads <int>\n"
-        << "  --junction-col <name>\n"
-        << "  --v-col <name>\n"
-        << "  --j-col <name>\n"
-        << "  --epitope-col <name>\n"
-        << "  --species-col <name>\n"
-        << "  --chain-col <name>\n";
+            << "Usage: vdjmatch2 <query.tsv> <target.tsv> [options]\n"
+            << "Options:\n"
+            << "  --out <path>\n"
+            << "  --max-sub <int>\n"
+            << "  --max-ins <int>\n"
+            << "  --max-del <int>\n"
+            << "  --max-edits <int>\n"
+            << "  --matrix-path <path>\n"
+            << "  --max-cost <float>\n"
+            << "  --match-v\n"
+            << "  --match-j\n"
+            << "  --align\n"
+            << "  --gene <value>\n"
+            << "  --species <value>\n"
+            << "  --epitope <value>\n"
+            << "  --threads <int>\n"
+            << "  --junction-col <name>\n"
+            << "  --v-col <name>\n"
+            << "  --j-col <name>\n"
+            << "  --epitope-col <name>\n"
+            << "  --species-col <name>\n"
+            << "  --chain-col <name>\n"
+            << "  --help, -h\n";
 }
 
 CliConfig ParseCli(int argc, char** argv) {
-    if (argc < 3 && argv[1] != std::string("--help") && argv[1] != std::string("-h")) {
-        PrintUsage();
-        throw std::runtime_error("Two positional TSV inputs are required");
+    if (argc > 1) {
+        const std::string firstArg = argv[1];
+        if (firstArg == "--help" || firstArg == "-h") {
+            PrintUsage();
+            std::exit(0);
+        }
     }
 
-    if (argc > 1 && (argv[1] == std::string("--help") || argv[1] == std::string("-h"))) {
+    if (argc < 3) {
         PrintUsage();
-        std::exit(0);
+        throw std::runtime_error("Two positional TSV inputs are required");
     }
 
     CliConfig config;
@@ -130,7 +144,17 @@ CliConfig ParseCli(int argc, char** argv) {
         throw std::runtime_error("Edit limits must be non-negative");
     }
 
-    config.maxEdits = config.maxSub + config.maxIns + config.maxDel;
+    if (config.maxEdits < -1) {
+        throw std::runtime_error("--max-edits must be non-negative");
+    }
+
+    if (config.maxCost < 0.0f) {
+        throw std::runtime_error("--max-cost must be non-negative");
+    }
+
+    if (config.maxEdits == -1) {
+        config.maxEdits = config.maxSub + config.maxIns + config.maxDel;
+    }
 
     return config;
 }

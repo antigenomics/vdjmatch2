@@ -19,6 +19,11 @@ add_executable(vdjmatch2
         src/RepertoireMatcher.cpp
 )
 
+target_compile_options(vdjmatch2 PRIVATE
+        $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Release>>:/Ox /fp:fast>
+        $<$<AND:$<NOT:$<CXX_COMPILER_ID:MSVC>>,$<CONFIG:Release>>:-O3 -ffast-math>
+)
+
 target_include_directories(vdjmatch2 PRIVATE include)
 target_link_libraries(vdjmatch2 PRIVATE Threads::Threads)
 
