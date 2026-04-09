@@ -11,30 +11,30 @@ The result file contains information about both the query clonotype and the matc
 
 ## CLI arguments
 
-| Flag             |        Type | Default                 | Description                                                                                                |
-|------------------|------------:|-------------------------|------------------------------------------------------------------------------------------------------------|
-| `query_tsv`      |  positional | —                       | First input clonotype table (query repertoire, TSV).                                                       |
-| `target_tsv`     |  positional | —                       | Second input clonotype table (target repertoire, TSV).                                                     |
-| `--out`          |       `str` | `match_result.tsv`      | Output TSV path.                                                                                           |
-| `--max-sub`      |       `int` | `1`                     | Maximum substitutions allowed.                                                                             |
-| `--max-ins`      |       `int` | `0`                     | Maximum insertions allowed.                                                                                |
-| `--max-del`      |       `int` | `0`                     | Maximum deletions allowed.                                                                                 |
-| `--max-edits`    |       `int` | `sum(sub + ins + del)`  | Maximum total number of edit operations allowed.                                                           |
-| `--matrix-path`  |       `str` | —                       | Path to a substitution matrix file. If set, matrix search mode is used.                                    |
-| `--max-cost`     | `int/float` | `6`                     | Maximum total alignment cost allowed in matrix mode.                                                       |
-| `--match-v`      |      `flag` | off                     | Require V gene to match when counting a match.                                                             |
-| `--match-j`      |      `flag` | off                     | Require J gene to match when counting a match.                                                             |
-| `--gene`         |       `str` | —                       | Chain filter applied while reading input tables.                                                           |
-| `--species`      |       `str` | `HomoSapiens`           | Species filter applied while reading input tables.                                                         |
-| `--epitope`      |       `str` | —                       | Epitope filter applied while reading input tables. If the epitope column is absent, the filter is ignored. |
-| `--threads`      |       `int` | `4`                     | Maximum number of worker threads for search.                                                               |
-| `--junction-col` |       `str` | `junction_aa or cdr3`   | Column name for the CDR3 amino-acid sequence. If not specified, the reader tries common alternatives.      |
-| `--v-col`        |       `str` | `v_call or v.segm`      | Column name for the V gene call. If not specified, the reader tries common alternatives.                   |
-| `--j-col`        |       `str` | `j_call or j.segm`      | Column name for the J gene call. If not specified, the reader tries common alternatives.                   |
-| `--epitope-col`  |       `str` | `antigen.epitope`       | Column name for the epitope. This column is optional.                                                      |
-| `--species-col`  |       `str` | `species`               | Column name for the species label.                                                                         |
-| `--chain-col`    |       `str` | `gene`                  | Column name for the chain label, for example `TRB` or `TRA`.                                               |
-| `--align`        |      `flag` | off                     | Add alignment information to the output.                                                                   |
+| Flag             |        Type | Default                | Description                                                                                                |
+|------------------|------------:|------------------------|------------------------------------------------------------------------------------------------------------|
+| `query_tsv`      |  positional | —                      | First input clonotype table (query repertoire, TSV).                                                       |
+| `target_tsv`     |  positional | —                      | Second input clonotype table (target repertoire, TSV).                                                     |
+| `--out`          |       `str` | `match_result.tsv`     | Output TSV path.                                                                                           |
+| `--max-sub`      |       `int` | `1`                    | Maximum substitutions allowed.                                                                             |
+| `--max-ins`      |       `int` | `0`                    | Maximum insertions allowed.                                                                                |
+| `--max-del`      |       `int` | `0`                    | Maximum deletions allowed.                                                                                 |
+| `--max-edits`    |       `int` | `sum(sub + ins + del)` | Maximum total number of edit operations allowed.                                                           |
+| `--matrix-path`  |       `str` | —                      | Path to a substitution matrix file. If set, matrix search mode is used.                                    |
+| `--max-cost`     | `int/float` | `6`                    | Maximum total alignment cost allowed in matrix mode.                                                       |
+| `--match-v`      |      `flag` | off                    | Require V gene to match when counting a match.                                                             |
+| `--match-j`      |      `flag` | off                    | Require J gene to match when counting a match.                                                             |
+| `--gene`         |       `str` | —                      | Chain filter applied while reading input tables.                                                           |
+| `--species`      |       `str` | —                      | Species filter applied while reading input tables.                                                         |
+| `--epitope`      |       `str` | —                      | Epitope filter applied while reading input tables. If the epitope column is absent, the filter is ignored. |
+| `--threads`      |       `int` | `4`                    | Maximum number of worker threads for search.                                                               |
+| `--junction-col` |       `str` | `junction_aa or cdr3`  | Column name for the CDR3 amino-acid sequence. If not specified, the reader tries common alternatives.      |
+| `--v-col`        |       `str` | `v_call or v.segm`     | Column name for the V gene call. If not specified, the reader tries common alternatives.                   |
+| `--j-col`        |       `str` | `j_call or j.segm`     | Column name for the J gene call. If not specified, the reader tries common alternatives.                   |
+| `--epitope-col`  |       `str` | `antigen.epitope`      | Column name for the epitope. This column is optional.                                                      |
+| `--species-col`  |       `str` | `species`              | Column name for the species label.                                                                         |
+| `--chain-col`    |       `str` | `gene`                 | Column name for the chain label, for example `TRB` or `TRA`.                                               |
+| `--align`        |      `flag` | off                    | Add alignment information to the output.                                                                   |
 
 ## Search modes
 
