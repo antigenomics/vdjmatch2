@@ -17,4 +17,3 @@ struct TsvReadResult {
 };
 
 TsvReadResult ReadTsv(const std::string& path, const CliConfig& config);
-a
