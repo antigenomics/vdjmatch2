@@ -7,14 +7,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
 
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
 add_executable(vdjmatch2
         main/main.cpp
         src/CliConfig.cpp
+        src/CostMatrix.cpp
         src/TsvReader.cpp
         src/Trie.cpp
+        src/RegionTrie.cpp
         src/MatchWriter.cpp
         src/RepertoireMatcher.cpp
 )
