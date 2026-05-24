@@ -7,6 +7,12 @@
 #include <string>
 #include <vector>
 
+enum class OutputMode {
+    Edit,
+    Matrix,
+    RegionalMatrix
+};
+
 class MatchWriterQueue {
 public:
     void Push(std::vector<std::string> batch);
@@ -22,11 +28,12 @@ private:
 
 class MatchWriter {
 public:
-    MatchWriter(const std::string& path, bool withAlignment);
+    MatchWriter(const std::string& path, bool withAlignment, OutputMode mode);
     void WriteHeader();
     void WriteBatch(const std::vector<std::string>& batch);
 
 private:
     std::ofstream out_;
     bool withAlignment_ = false;
+    OutputMode mode_ = OutputMode::Edit;
 };

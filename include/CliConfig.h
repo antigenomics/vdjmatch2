@@ -14,6 +14,9 @@ struct CliConfig {
     int maxEdits = -1;
 
     std::optional<std::string> matrixPath = std::nullopt;
+    std::optional<std::string> matrixVPath = std::nullopt;
+    std::optional<std::string> matrixNDNPath = std::nullopt;
+    std::optional<std::string> matrixJPath = std::nullopt;
     float maxCost = 6.0f;
 
     bool matchV = false;
@@ -32,6 +35,12 @@ struct CliConfig {
     std::string epitopeCol = "antigen.epitope";
     std::string speciesCol = "species";
     std::string chainCol = "gene";
+    std::string vEndCol = "v_end";
+    std::string jStartCol = "j_start";
+    std::string cdr3FixCol = "cdr3fix";
+
+    bool IsMatrixMode() const;
+    bool IsRegionalMatrixMode() const;
 };
 
 CliConfig ParseCli(int argc, char** argv);

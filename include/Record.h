@@ -1,6 +1,9 @@
 #pragma once
 
+#include "Region.h"
+
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -12,5 +15,8 @@ struct Record {
     std::string epitope;
     std::string species;
     std::string chain;
+    std::optional<int> vEnd;
+    std::optional<int> jStart;
+    std::vector<Region> regions;
     std::vector<std::string> rawFields;
 };
