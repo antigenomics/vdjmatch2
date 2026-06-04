@@ -6,6 +6,11 @@
 #include "Trie.h"
 #include "TsvReader.h"
 
+#include <atomic>
+#include <mutex>
+#include <thread>
+#include <exception>
+#include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -142,72 +147,144 @@ int RepertoireMatcher::Run() {
     if (config_.IsRegionalMatrixMode()) outputMode = OutputMode::RegionalMatrix;
     else if (config_.IsMatrixMode()) outputMode = OutputMode::Matrix;
 
+    MatchWriterQueue queue;
     MatchWriter writer(config_.outPath, config_.writeAlignment, outputMode);
     writer.WriteHeader();
 
-    std::size_t written = 0;
-    constexpr std::size_t kWriteBatchSize = 4096;
-    std::vector<std::string> outputBatch;
-    outputBatch.reserve(kWriteBatchSize);
+    std::exception_ptr firstException;
+    std::mutex exceptionMutex;
+    std::atomic<bool> stopRequested{false};
 
-    auto flush = [&]() {
-        if (!outputBatch.empty()) {
-            writer.WriteBatch(outputBatch);
-            outputBatch.clear();
+    auto storeException = [&](std::exception_ptr ex) {
+        {
+            std::lock_guard<std::mutex> lock(exceptionMutex);
+            if (!firstException) {
+                firstException = ex;
+            }
         }
+        stopRequested.store(true);
+        queue.Close();
+    };
+
+    std::thread writerThread([&]() {
+        try {
+            std::vector<std::string> batch;
+            while (!stopRequested.load()) {
+                if (!queue.Pop(batch)) {
+                    break;
+                }
+                writer.WriteBatch(batch);
+                batch.clear();
+            }
+        } catch (...) {
+            storeException(std::current_exception());
+        }
+    });
+
+    constexpr std::size_t kQueryBatchSize = 1000;
+
+    std::atomic<std::size_t> next{0};
+    std::atomic<std::size_t> written{0};
+    std::vector<std::thread> workers;
+    workers.reserve(static_cast<std::size_t>(config_.threads));
+
+    auto workerLoop = [&](auto& trieInstance) {
+        return [&]() {
+            try {
+                while (!stopRequested.load()) {
+                    const std::size_t batchBegin = next.fetch_add(kQueryBatchSize);
+                    if (batchBegin >= queryResult.records.size()) {
+                        break;
+                    }
+
+                    const std::size_t batchEnd =
+                            std::min(batchBegin + kQueryBatchSize, queryResult.records.size());
+
+                    std::vector<std::string> outputBatch;
+
+                    for (std::size_t idx = batchBegin; idx < batchEnd; ++idx) {
+                        if (stopRequested.load()) break;
+
+                        const auto& query = queryResult.records[idx];
+
+                        if constexpr (std::is_same_v<std::decay_t<decltype(trieInstance)>, RegionTrie>) {
+                            auto hits = trieInstance.SearchIndices(query.junctionAA, query.regions, config_.maxCost, BuildVFilter(config_, query), BuildJFilter(config_, query));
+                            outputBatch.reserve(outputBatch.size() + hits.size());
+                            for (const auto& [targetIndex, cost] : hits) {
+                                std::optional<AlignmentResult> alignment = std::nullopt;
+                                if (config_.writeAlignment) {
+                                    alignment = trieInstance.AlignIndexHit(query.junctionAA, query.regions, targetIndex, config_.maxCost);
+                                }
+                                outputBatch.push_back(BuildLine(query, targetResult.records[targetIndex], alignment, config_.writeAlignment, outputMode, cost));
+                            }
+                        } else {
+                            if (config_.IsMatrixMode()) {
+                                auto hits = trieInstance.SearchIndicesWithMatrix(query.junctionAA, config_.maxCost, BuildVFilter(config_, query), BuildJFilter(config_, query));
+                                outputBatch.reserve(outputBatch.size() + hits.size());
+                                for (const auto& [targetIndex, cost] : hits) {
+                                    std::optional<AlignmentResult> alignment = std::nullopt;
+                                    if (config_.writeAlignment) alignment = trieInstance.AlignIndexHitWithMatrix(query.junctionAA, targetIndex, config_.maxCost);
+                                    outputBatch.push_back(BuildLine(query, targetResult.records[targetIndex], alignment, config_.writeAlignment, outputMode, cost));
+                                }
+                            } else {
+                                auto hits = trieInstance.SearchIndices(query.junctionAA, config_.maxSub, config_.maxIns, config_.maxDel, config_.maxEdits, BuildVFilter(config_, query), BuildJFilter(config_, query));
+                                outputBatch.reserve(outputBatch.size() + hits.size());
+                                for (const auto& [targetIndex, distance] : hits) {
+                                    std::optional<AlignmentResult> alignment = std::nullopt;
+                                    if (config_.writeAlignment) alignment = trieInstance.AlignIndexHit(query.junctionAA, targetIndex, config_.maxSub, config_.maxIns, config_.maxDel, config_.maxEdits);
+                                    outputBatch.push_back(BuildLine(query, targetResult.records[targetIndex], alignment, config_.writeAlignment, outputMode, static_cast<float>(distance)));
+                                }
+                            }
+                        }
+                    }
+
+                    written.fetch_add(outputBatch.size());
+                    if (!outputBatch.empty() && !stopRequested.load()) {
+                        queue.Push(std::move(outputBatch));
+                    }
+                }
+            } catch (...) {
+                storeException(std::current_exception());
+            }
+        };
     };
 
     if (config_.IsRegionalMatrixMode()) {
         RegionTrie trie(targetSequences, targetRegions, targetVGenes, targetJGenes);
         trie.LoadRegionMatrices(*config_.matrixVPath, *config_.matrixNDNPath, *config_.matrixJPath);
-
-        for (const auto& query : queryResult.records) {
-            auto hits = trie.SearchIndices(query.junctionAA, query.regions, config_.maxCost, BuildVFilter(config_, query), BuildJFilter(config_, query));
-            for (const auto& [targetIndex, cost] : hits) {
-                std::optional<AlignmentResult> alignment = std::nullopt;
-                if (config_.writeAlignment) {
-                    alignment = trie.AlignIndexHit(query.junctionAA, query.regions, targetIndex, config_.maxCost);
-                }
-                outputBatch.push_back(BuildLine(query, targetResult.records[targetIndex], alignment, config_.writeAlignment, outputMode, cost));
-                ++written;
-                if (outputBatch.size() >= kWriteBatchSize) flush();
-            }
+        for (int t = 0; t < config_.threads; ++t) {
+            workers.emplace_back(workerLoop(trie));
+        }
+        for (auto& worker : workers) {
+            if (worker.joinable()) worker.join();
         }
     } else {
         Trie trie(targetSequences, targetVGenes, targetJGenes);
         if (config_.IsMatrixMode()) trie.LoadSubstitutionMatrix(*config_.matrixPath);
-
-        for (const auto& query : queryResult.records) {
-            if (config_.IsMatrixMode()) {
-                auto hits = trie.SearchIndicesWithMatrix(query.junctionAA, config_.maxCost, BuildVFilter(config_, query), BuildJFilter(config_, query));
-                for (const auto& [targetIndex, cost] : hits) {
-                    std::optional<AlignmentResult> alignment = std::nullopt;
-                    if (config_.writeAlignment) alignment = trie.AlignIndexHitWithMatrix(query.junctionAA, targetIndex, config_.maxCost);
-                    outputBatch.push_back(BuildLine(query, targetResult.records[targetIndex], alignment, config_.writeAlignment, outputMode, cost));
-                    ++written;
-                    if (outputBatch.size() >= kWriteBatchSize) flush();
-                }
-            } else {
-                auto hits = trie.SearchIndices(query.junctionAA, config_.maxSub, config_.maxIns, config_.maxDel, config_.maxEdits, BuildVFilter(config_, query), BuildJFilter(config_, query));
-                for (const auto& [targetIndex, distance] : hits) {
-                    std::optional<AlignmentResult> alignment = std::nullopt;
-                    if (config_.writeAlignment) alignment = trie.AlignIndexHit(query.junctionAA, targetIndex, config_.maxSub, config_.maxIns, config_.maxDel, config_.maxEdits);
-                    outputBatch.push_back(BuildLine(query, targetResult.records[targetIndex], alignment, config_.writeAlignment, outputMode, static_cast<float>(distance)));
-                    ++written;
-                    if (outputBatch.size() >= kWriteBatchSize) flush();
-                }
-            }
+        for (int t = 0; t < config_.threads; ++t) {
+            workers.emplace_back(workerLoop(trie));
+        }
+        for (auto& worker : workers) {
+            if (worker.joinable()) worker.join();
         }
     }
 
-    flush();
+    queue.Close();
+
+    if (writerThread.joinable()) {
+        writerThread.join();
+    }
+
+    if (firstException) {
+        std::rethrow_exception(firstException);
+    }
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
     std::cout << "query_records=" << queryResult.records.size()
               << " target_records=" << targetResult.records.size()
-              << " matches_written=" << written << '\n';
+              << " matches_written=" << written.load() << '\n';
     std::cout << "Time: " << duration.count() << " ms" << std::endl;
     return 0;
 }
